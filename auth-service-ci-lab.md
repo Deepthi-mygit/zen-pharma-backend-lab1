@@ -19,7 +19,7 @@ GitHub Actions full CI
   ├─ Push to ECR  (sha-xxxxxxx)
   └─ Cosign sign
       │
-      ├──► deploy-dev job ──► git commit to zen-gitops
+      ├──► deploy-dev job ──► git commit to zen-gitops-lab1
       │                         envs/dev/values-auth-service.yaml
       │                                  │
       │                                  ▼
@@ -27,7 +27,7 @@ GitHub Actions full CI
       │                         helm template → kubectl apply
       │                         DEV pod rolling to sha-xxxxxxx ✓
       │
-      └──► open-qa-pr job ──► PR opened in zen-gitops
+      └──► open-qa-pr job ──► PR opened in zen-gitops-lab1
                                 envs/qa/values-auth-service.yaml
 ```
 
@@ -42,7 +42,7 @@ GitHub Actions full CI
 | IAM role | `pharma-dev-github-actions-role` (GitHub OIDC — no static keys needed) |
 | RDS PostgreSQL | `<DB_HOST>` — running in the same VPC as EKS |
 | Kubernetes Secrets | `db-credentials` and `jwt-secret` pre-created in the `dev` namespace |
-| ArgoCD | Installed on EKS, app `auth-service-dev` created pointing at `https://github.com/<YOUR-USERNAME>/zen-gitops.git` |
+| ArgoCD | Installed on EKS, app `auth-service-dev` created pointing at `https://github.com/<YOUR-USERNAME>/zen-gitops-lab1.git` |
 
 Your instructor will give you:
 - `<ACCOUNT_ID>` — 12-digit AWS account number
@@ -75,21 +75,21 @@ kubectl get nodes   # should list cluster nodes
 
 Do this first. You need both repos forked before configuring anything else.
 
-### Step 1.1 — Fork zen-pharma-backend
+### Step 1.1 — Fork zen-pharma-backend-lab1
 
-1. Go to `https://github.com/DPP-2026/zen-pharma-backend`
+1. Go to `https://github.com/DPP-2026/zen-pharma-backend-lab1`
 2. Click **Fork** → select your account → **Create fork**
 3. Clone your fork:
 
 ```bash
-git clone https://github.com/<YOUR-USERNAME>/zen-pharma-backend.git
-cd zen-pharma-backend
+git clone https://github.com/<YOUR-USERNAME>/zen-pharma-backend-lab1.git
+cd zen-pharma-backend-lab1
 ```
 
 Your fork contains:
 
 ```
-zen-pharma-backend/
+zen-pharma-backend-lab1/
 ├── auth-service/
 │   ├── src/
 │   ├── pom.xml
@@ -105,16 +105,16 @@ zen-pharma-backend/
 
 You do not create any workflow files — they are already there.
 
-### Step 1.2 — Fork zen-gitops
+### Step 1.2 — Fork zen-gitops-lab1
 
-1. Go to `https://github.com/DPP-2026/zen-gitops`
+1. Go to `https://github.com/DPP-2026/zen-gitops-lab1`
 2. Click **Fork** → select your account → **Create fork**
 3. Clone your fork in a separate directory:
 
 ```bash
 cd ..
-git clone https://github.com/<YOUR-USERNAME>/zen-gitops.git
-cd zen-gitops
+git clone https://github.com/<YOUR-USERNAME>/zen-gitops-lab1.git
+cd zen-gitops-lab1
 ```
 
 ---
@@ -125,7 +125,7 @@ All configuration below is in GitHub Settings — no code changes.
 
 ### Step 2.1 — Create a Personal Access Token for GitOps writes
 
-The CI pipeline commits to your `zen-gitops` repo after every build. It needs a token to do that.
+The CI pipeline commits to your `zen-gitops-lab1` repo after every build. It needs a token to do that.
 
 1. GitHub → your profile icon → **Settings**
 2. Left sidebar → **Developer settings** → **Personal access tokens** → **Fine-grained tokens**
@@ -134,15 +134,15 @@ The CI pipeline commits to your `zen-gitops` repo after every build. It needs a 
    - **Token name**: `zen-pharma-gitops-token`
    - **Expiration**: 90 days
    - **Resource owner**: your account
-   - **Repository access**: select only `zen-gitops` (your fork)
+   - **Repository access**: select only `zen-gitops-lab1` (your fork)
 5. Under **Permissions**, set:
    - **Contents**: Read and write
    - **Pull requests**: Read and write
 6. Click **Generate token** — **copy it now**, you will not see it again
 
-### Step 2.2 — Add GitHub Secrets to zen-pharma-backend
+### Step 2.2 — Add GitHub Secrets to zen-pharma-backend-lab1
 
-Go to your `zen-pharma-backend` fork → **Settings** → **Secrets and variables** → **Actions** → **Secrets** tab.
+Go to your `zen-pharma-backend-lab1` fork → **Settings** → **Secrets and variables** → **Actions** → **Secrets** tab.
 
 Click **New repository secret** and add:
 
@@ -157,172 +157,33 @@ Still in **Secrets and variables** → click the **Variables** tab → **New rep
 
 | Variable name | Value |
 |---|---|
-| `GITOPS_REPO` | `<YOUR-USERNAME>/zen-gitops` |
-
-### Step 2.4 — Create the `dev` environment
-
-The `deploy-dev` job uses `environment: dev` — this environment must exist in GitHub.
-
-1. Go to **Settings** → **Environments** → **New environment**
-2. Name: `dev`
-3. Leave all protection rules blank
-4. Click **Configure environment**
+| `GITOPS_REPO` | `<YOUR-USERNAME>/zen-gitops-lab1` |
 
 ---
 
-## Part 3 — Add GitOps values files
+## Part 3 — Update GitOps values files
 
 The CI pipeline writes the new image tag into these files after every build. ArgoCD reads them to know what to deploy.
 
-You need to create two files in your `zen-gitops` fork.
+Both files already exist in your `zen-gitops-lab1` fork. You only need to fill in the two placeholder values your instructor gave you.
 
-### Step 3.1 — Create envs/dev/values-auth-service.yaml
+### Step 3.1 — Update envs/dev/values-auth-service.yaml
 
 ```bash
-cd zen-gitops
+cd zen-gitops-lab1
 ```
 
-Create `envs/dev/values-auth-service.yaml` with this content.
-Replace `<ACCOUNT_ID>` and `<DB_HOST>` with values from your instructor.
+Open `envs/dev/values-auth-service.yaml` and replace:
 
-```yaml
-replicaCount: 1
-fullnameOverride: auth-service
+- `<ACCOUNT_ID>` → your 12-digit AWS account ID
+- `<DB_HOST>` → the RDS dev endpoint from your instructor
 
-image:
-  repository: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/auth-service
-  tag: latest
-  pullPolicy: Always
+### Step 3.2 — Update envs/qa/values-auth-service.yaml
 
-service:
-  type: ClusterIP
-  port: 8081
-  targetPort: 8081
+Open `envs/qa/values-auth-service.yaml` and replace:
 
-resources:
-  requests:
-    cpu: 100m
-    memory: 256Mi
-  limits:
-    cpu: 500m
-    memory: 512Mi
-
-livenessProbe:
-  path: /actuator/health
-  port: 8081
-  initialDelaySeconds: 60
-  periodSeconds: 15
-  timeoutSeconds: 5
-  failureThreshold: 3
-  successThreshold: 1
-
-readinessProbe:
-  path: /actuator/health/readiness
-  port: 8081
-  initialDelaySeconds: 30
-  periodSeconds: 10
-  timeoutSeconds: 5
-  failureThreshold: 3
-  successThreshold: 1
-
-configmap:
-  SPRING_PROFILES_ACTIVE: dev
-  DB_HOST: <DB_HOST>
-  LOG_LEVEL: DEBUG
-  SERVER_PORT: "8081"
-  TOKEN_EXPIRATION_MS: "86400000"
-  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,metrics,prometheus"
-
-envFrom:
-  - secretRef:
-      name: db-credentials
-  - secretRef:
-      name: jwt-secret
-
-volumeMounts:
-  - name: tmp
-    mountPath: /tmp
-
-volumes:
-  - name: tmp
-    emptyDir: {}
-
-serviceAccount:
-  create: true
-  name: auth-service
-```
-
-### Step 3.2 — Create envs/qa/values-auth-service.yaml
-
-Create `envs/qa/values-auth-service.yaml` — same structure, different profile and DB host.
-Replace `<ACCOUNT_ID>` and `<QA_DB_HOST>` with values from your instructor.
-
-```yaml
-replicaCount: 1
-fullnameOverride: auth-service
-
-image:
-  repository: <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/auth-service
-  tag: latest
-  pullPolicy: Always
-
-service:
-  type: ClusterIP
-  port: 8081
-  targetPort: 8081
-
-resources:
-  requests:
-    cpu: 100m
-    memory: 256Mi
-  limits:
-    cpu: 500m
-    memory: 512Mi
-
-livenessProbe:
-  path: /actuator/health
-  port: 8081
-  initialDelaySeconds: 60
-  periodSeconds: 15
-  timeoutSeconds: 5
-  failureThreshold: 3
-  successThreshold: 1
-
-readinessProbe:
-  path: /actuator/health/readiness
-  port: 8081
-  initialDelaySeconds: 30
-  periodSeconds: 10
-  timeoutSeconds: 5
-  failureThreshold: 3
-  successThreshold: 1
-
-configmap:
-  SPRING_PROFILES_ACTIVE: qa
-  DB_HOST: <QA_DB_HOST>
-  LOG_LEVEL: INFO
-  SERVER_PORT: "8081"
-  TOKEN_EXPIRATION_MS: "86400000"
-  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,metrics,prometheus"
-
-envFrom:
-  - secretRef:
-      name: db-credentials
-  - secretRef:
-      name: jwt-secret
-
-volumeMounts:
-  - name: tmp
-    mountPath: /tmp
-
-volumes:
-  - name: tmp
-    emptyDir: {}
-
-serviceAccount:
-  create: true
-  name: auth-service
-```
+- `<ACCOUNT_ID>` → your 12-digit AWS account ID
+- `<QA_DB_HOST>` → the RDS QA endpoint from your instructor
 
 ### Step 3.3 — Commit and push
 
@@ -341,7 +202,7 @@ ArgoCD will now detect these files within ~3 minutes. Since there is no image ye
 ### Step 4.1 — Create the develop branch
 
 ```bash
-cd zen-pharma-backend
+cd zen-pharma-backend-lab1
 git checkout -b develop
 git push -u origin develop
 ```
@@ -359,7 +220,7 @@ git commit -m "test: trigger PR check"
 git push -u origin feat-first-build
 ```
 
-Go to your `zen-pharma-backend` fork → **Actions** tab.
+Go to your `zen-pharma-backend-lab1` fork → **Actions** tab.
 
 You will see **PR Check — auth-service** start. It runs:
 1. Starts a PostgreSQL 15 container for integration tests
@@ -418,7 +279,7 @@ Run yq e ".image.tag = \"sha-abc1234\"" -i "_gitops/envs/dev/values-auth-service
 [main xyz5678] ci(dev): update auth-service → sha-abc1234
 ```
 
-Then open your `zen-gitops` fork on GitHub. You will see a new commit on `main`:
+Then open your `zen-gitops-lab1` fork on GitHub. You will see a new commit on `main`:
 ```
 ci(dev): update auth-service → sha-abc1234
 ```
@@ -427,7 +288,7 @@ ci(dev): update auth-service → sha-abc1234
 
 **Job 3 — Open PR QA Promotion** (starts after Job 2)
 
-Open your `zen-gitops` fork → **Pull requests**. You will see:
+Open your `zen-gitops-lab1` fork → **Pull requests**. You will see:
 ```
 promote(qa): auth-service → sha-abc1234
 ```
@@ -452,7 +313,7 @@ You should see your `sha-abc1234` tag in the output.
 
 ## Part 5 — Watch ArgoCD deploy to DEV
 
-The moment Job 2 committed to `zen-gitops`, ArgoCD began a sync. It polls the repo every ~3 minutes.
+The moment Job 2 committed to `zen-gitops-lab1`, ArgoCD began a sync. It polls the repo every ~3 minutes.
 
 ### Step 5.1 — Check the ArgoCD app
 
@@ -593,7 +454,7 @@ The QA PR was opened automatically when the build finished. Merging it deploys t
 
 ### Step 7.1 — Review and merge the QA PR
 
-1. Open your `zen-gitops` fork → **Pull requests**
+1. Open your `zen-gitops-lab1` fork → **Pull requests**
 2. Open `promote(qa): auth-service → sha-abc1234`
 3. Look at the diff — it changes **only** `image.tag` in `envs/qa/values-auth-service.yaml`
 4. Merge it
@@ -627,7 +488,7 @@ GitHub Actions full CI
     ECR push → sha-abc1234
     Cosign sign → Rekor log
     │
-    ├──► zen-gitops: envs/dev/values-auth-service.yaml
+    ├──► zen-gitops-lab1: envs/dev/values-auth-service.yaml
     │         image.tag: sha-abc1234
     │              │
     │              ▼
@@ -635,7 +496,7 @@ GitHub Actions full CI
     │         helm template → kubectl apply
     │         DEV pod: sha-abc1234 ✓
     │
-    └──► zen-gitops PR: envs/qa/values-auth-service.yaml
+    └──► zen-gitops-lab1 PR: envs/qa/values-auth-service.yaml
               (merge when QA team approves)
                    │
                    ▼
@@ -653,10 +514,10 @@ CI never talks to Kubernetes. CI talks to git. Kubernetes gets its orders from g
 |---|---|---|
 | Job fails: `Error assuming role` | `AWS_ACCOUNT_ID` secret wrong or OIDC trust policy mismatch | Confirm the 12-digit account ID and that the repo name in the trust policy matches your fork exactly |
 | Job fails: `denied: Your authorization token has expired` | ECR login failed | Double-check `AWS_ACCOUNT_ID` secret |
-| `deploy-dev` fails: `Authentication failed for https://github.com/...` | `GITOPS_TOKEN` expired or scoped to wrong repo | Regenerate PAT with Contents + Pull requests write on your zen-gitops fork |
+| `deploy-dev` fails: `Authentication failed for https://github.com/...` | `GITOPS_TOKEN` expired or scoped to wrong repo | Regenerate PAT with Contents + Pull requests write on your zen-gitops-lab1 fork |
 | Maven tests fail: `Connection refused` to DB | PostgreSQL not ready or `needs-database` flag missing | Check `ci-auth-service.yml` has `needs-database: true` passed to the reusable workflow |
 | Pod stuck in `CrashLoopBackOff` | Spring Boot cannot connect to RDS | `kubectl logs -n dev deploy/auth-service` — check `DB_HOST` in your values file |
 | Pod stuck in `ImagePullBackOff` | ECR pull auth issue | Check the service account's IAM role annotation; verify image tag exists in ECR |
 | ArgoCD shows `OutOfSync` but not healing | `selfHeal` not enabled | Run `argocd app set auth-service-dev --self-heal` |
-| ArgoCD app still pointing at `DPP-2026/zen-gitops` | App repoURL not updated to your fork | Notify instructor — the app needs to be re-pointed to `https://github.com/<YOUR-USERNAME>/zen-gitops.git` |
+| ArgoCD app still pointing at `DPP-2026/zen-gitops-lab1` | App repoURL not updated to your fork | Notify instructor — the app needs to be re-pointed to `https://github.com/<YOUR-USERNAME>/zen-gitops-lab1.git` |
 | `argocd: command not found` | argocd CLI not installed | `brew install argocd` (Mac) or see https://argo-cd.readthedocs.io/en/stable/cli_installation/ |
