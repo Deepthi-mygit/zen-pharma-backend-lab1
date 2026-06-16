@@ -244,6 +244,45 @@ spec:
 EOF
 ```
 
+Create QA ARgo application
+```bash
+kubectl apply -f - <<'EOF'
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: auth-service-qa
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: pharma
+  source:
+    repoURL: https://github.com/DPP-2026/zen-gitops-lab1.git
+    targetRevision: HEAD
+    path: helm-charts
+    helm:
+      valueFiles:
+        - ../envs/qa/values-auth-service.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: qa
+  syncPolicy:
+    automated:
+      prune: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+EOF
+```
+
 ### Step 4 — Set up External Secrets
 
 Wires up AWS Secrets Manager → Kubernetes Secrets (`db-credentials`, `jwt-secret`) in the `dev` namespace via IRSA. The IAM role `pharma-dev-eso-role` is created by Terraform in Stage 1 — no static AWS keys are stored in the cluster.
