@@ -570,7 +570,7 @@ ArgoCD will attempt an initial sync immediately. Because the QA values file alre
 
 > Same principle as QA: secrets must exist before the ArgoCD application is created. For prod, the ArgoCD app uses manual sync, so there is no risk of an immediate uncontrolled deploy — but the namespace and secrets still need to be ready before the student runs `argocd app sync` in Part 10.
 
-Prod has its own RDS instance provisioned by Terraform in `zen-infra`. Its Secrets Manager paths (`/pharma/prod/db-credentials`, `/pharma/prod/jwt-secret`) are separate from dev/qa.
+Prod shares the same RDS instance and credentials as dev and qa. The ExternalSecrets reference the same `/pharma/dev/...` paths in Secrets Manager, provisioned by Terraform in `zen-infra`.
 
 ```bash
 export AWS_REGION=us-east-1
@@ -595,19 +595,19 @@ spec:
   data:
     - secretKey: DB_USERNAME
       remoteRef:
-        key: /pharma/prod/db-credentials
+        key: /pharma/dev/db-credentials
         property: username
     - secretKey: DB_PASSWORD
       remoteRef:
-        key: /pharma/prod/db-credentials
+        key: /pharma/dev/db-credentials
         property: password
     - secretKey: SPRING_DATASOURCE_USERNAME
       remoteRef:
-        key: /pharma/prod/db-credentials
+        key: /pharma/dev/db-credentials
         property: username
     - secretKey: SPRING_DATASOURCE_PASSWORD
       remoteRef:
-        key: /pharma/prod/db-credentials
+        key: /pharma/dev/db-credentials
         property: password
 EOF
 
@@ -628,7 +628,7 @@ spec:
   data:
     - secretKey: JWT_SECRET
       remoteRef:
-        key: /pharma/prod/jwt-secret
+        key: /pharma/dev/jwt-secret
         property: secret
 EOF
 
@@ -1398,4 +1398,4 @@ CI never talks to Kubernetes. CI talks to git. Kubernetes gets its orders from g
 | `argocd app sync auth-service-prod` hangs | Prod pod cannot pull the image or connect to RDS | `kubectl describe pod -n prod` and `kubectl logs -n prod deploy/auth-service` to identify the failure |
 | Prod pod stuck in `CrashLoopBackOff` | Spring Boot cannot connect to prod RDS | Check `<PROD_DB_HOST>` in `envs/prod/values-auth-service.yaml` and confirm the RDS security group allows EKS nodes |
 | QA External Secrets show `SecretSyncError` | Dev Secrets Manager paths not reachable from ESO | Confirm `/pharma/dev/db-credentials` and `/pharma/dev/jwt-secret` exist in AWS Secrets Manager (created by Terraform in `zen-infra`) and that `pharma-dev-eso-role` has `GetSecretValue` on those paths |
-| Prod External Secrets show `SecretSyncError` | Prod Secrets Manager paths not created | Confirm `/pharma/prod/db-credentials` and `/pharma/prod/jwt-secret` exist in AWS Secrets Manager (created by Terraform in `zen-infra`) |
+| Prod External Secrets show `SecretSyncError` | Dev Secrets Manager paths not reachable from ESO | Confirm `/pharma/dev/db-credentials` and `/pharma/dev/jwt-secret` exist in AWS Secrets Manager (created by Terraform in `zen-infra`) — prod reuses the same paths as dev and qa |
